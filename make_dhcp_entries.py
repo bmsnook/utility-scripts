@@ -8,6 +8,15 @@ import sys
 ## A1:B2:C3:D4:E5:F6   192.168.0.254    Amazon Echo Spot Kitchen
 ## 
 
+## OUTPUT: 
+## host amazon-echo-spot-kitchen {
+##     hardware ethernet a1:b2:c3:d4:e5:f6;
+##     fixed-address 192.168.0.254;
+##     ddns-hostname amazon-echo-spot-kitchen;
+## }
+## 
+
+
 def process_file(DFILE):
     with open(DFILE, 'r') as f:
         for line in f:
