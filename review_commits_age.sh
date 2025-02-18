@@ -35,27 +35,3 @@ for EACH_REPO in ${REPOS[@]}; do
     done
     cd -
 done
-
-# echo "DEBUG: pwd is $(pwd) (before cd)"
-
-# ## Check date of one branch
-# TARGET_REPO="gcp-terraform"
-# EACH_REPO="${TARGET_REPO}"
-# cat /dev/null > "${EACH_REPO}.branches-to-remove.txt"
-# cat /dev/null > "${EACH_REPO}.branches-to-remove-commands.txt"
-# BRANCHES_TO_REMOVE_FILE=$(readlink -fn "${EACH_REPO}.branches-to-remove.txt")
-# BRANCHES_TO_REMOVE_CMDS_FILE=$(readlink -fn "${EACH_REPO}.branches-to-remove-commands.txt")
-# cd ${TARGET_REPO}
-# echo "DEBUG: pwd is $(pwd) (after cd)"
-# REMOTE_BRANCHES=(devops-1511 DEVOPS-1698)
-# for EACH_BRANCH in ${REMOTE_BRANCHES[@]}; do
-#     BRANCH_EPOCH_LAST_UPDATE=$(git log --date=raw --name-status -1 ${EACH_BRANCH} | awk '/^Date:/{print $2}')
-#     if [[ ${BRANCH_EPOCH_LAST_UPDATE} -lt ${EPOCH_SECONDS_6_MONTHS_AGO} ]]; then
-#         echo "Branch \"${EACH_BRANCH}\" is OLD"
-#         git log --name-status -1 "${EACH_BRANCH}" | egrep '^Date:'
-#         echo ${EACH_BRANCH} >> ${BRANCHES_TO_REMOVE_FILE}
-#         echo "git branch -D ${EACH_BRANCH}" >> ${BRANCHES_TO_REMOVE_CMDS_FILE}
-#     else
-#         : # echo "Branch \"${EACH_BRANCH}\" is NEW"
-#     fi
-# done
