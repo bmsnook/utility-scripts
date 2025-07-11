@@ -12,8 +12,8 @@ function get_first_char(word) {
 	hd_1 = sprintf("%s/%s",get_first_char($1),$1)
 	hd_2 = sprintf("%s/%s",get_first_char($2),$2)
 
-	cmd_make_link_1=sprintf("[[ -e %s ]] || mkdir -p %s && cd %s && ln -s ../../%s && cd ../..",hd_1,hd_1,hd_1,hd_2)
-	cmd_make_link_2=sprintf("[[ -e %s ]] || mkdir -p %s && cd %s && ln -s ../../%s && cd ../..",hd_2,hd_2,hd_2,hd_1)
+	cmd_make_link_1=sprintf("[[ -e %s ]] || mkdir -p -- %s && cd -- %s && ln -s ../../%s && cd ../..",hd_1,hd_1,hd_1,hd_2)
+	cmd_make_link_2=sprintf("[[ -e %s ]] || mkdir -p -- %s && cd -- %s && ln -s ../../%s && cd ../..",hd_2,hd_2,hd_2,hd_1)
 	cmd_open_1=sprintf("open %s",hd_1)
 	cmd_open_2=sprintf("open %s",hd_2)
 
