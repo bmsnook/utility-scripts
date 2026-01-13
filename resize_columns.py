@@ -211,13 +211,13 @@ def format_table(headers, values, max_lengths, num_cols=None):
     if headers:
         output_lines.append(separator)
 
-    # Format value rows (left-aligned)
+    # Format value rows (right-aligned)
     for value_row in values:
         row_parts = ['|']
         for col_idx in range(num_cols):
             cell = value_row[col_idx] if col_idx < len(value_row) else ''
-            # Left-align the value with single space padding
-            padded = cell.ljust(max_lengths[col_idx])
+            # Right-align the value with single space padding
+            padded = cell.rjust(max_lengths[col_idx])
             row_parts.append(f' {padded} ')
             row_parts.append('|')
         output_lines.append(''.join(row_parts))
