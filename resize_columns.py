@@ -8,7 +8,7 @@ args = argparse.ArgumentParser(description='Parse a pipe-delimited table, store 
 # Debug arguments
 args.add_argument('-d', '--debug', action='store_true', help='Debug mode')
 args.add_argument('file', nargs='?', type=str, help='The file to process (reads from stdin if not provided)')
-args.add_argument('--columns', type=int, help='The number of columns to resize')
+args.add_argument('-c', '--columns', type=int, help='Number of columns (from left) to format and output')
 args.add_argument('--width', type=int, help='The width of the columns')
 args.add_argument('--delimiter', type=str, help='The delimiter to use')
 args.add_argument('--row_delimiter', type=str, help='The row delimiter to use')
@@ -73,14 +73,19 @@ def parse_table(lines):
     return headers, values, max_lengths
 
 
-def format_table(headers, values, max_lengths):
+def format_table(headers, values, max_lengths, num_cols=None):
     """
     Format headers and values into a table with:
     - One space between separator and content
     - Headers centered in each column
     - Values left-aligned in each column
+
+    Args:
+        num_cols: Number of columns to output (from left). If None, outputs all columns.
     """
-    num_cols = len(max_lengths)
+    total_cols = len(max_lengths)
+    if num_cols is None or num_cols > total_cols:
+        num_cols = total_cols
     output_lines = []
 
     # Build separator line
@@ -144,7 +149,7 @@ def main():
         print(f"Max lengths: {max_lengths}")
         print()
         print("=== Reformatted Table ===")
-    print(format_table(headers, values, max_lengths))
+    print(format_table(headers, values, max_lengths, args.columns))
 
 
 if __name__ == '__main__':
