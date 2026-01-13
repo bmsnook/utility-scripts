@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parse a pipe-delimited table and find the max string length per column."""
+"""Parse a pipe-delimited table, store headers and values, and reformat output."""
 
 import sys
 
@@ -13,24 +13,43 @@ def parse_table(lines):
     | val1 | val2   | val3 |
     +-----+---------+------+
 
-    Returns a dict mapping column index (0-based) to max string length.
+    Returns:
+        headers: 2D list of header rows (to support multi-line headers)
+        values: 2D list of data rows
+        max_lengths: dict mapping column index to max string length
     """
+    headers = []      # 2D list: list of header rows, each row is a list of cells
+    values = []       # 2D list: list of data rows, each row is a list of cells
     max_lengths = {}
+
+    separator_count = 0
+    in_header = True
 
     for line in lines:
         line = line.strip()
 
-        # Skip separator lines (start with +)
-        if not line or line.startswith('+'):
+        if not line:
             continue
 
-        # Split by | and strip whitespace from each cell
-        # The split gives empty strings at start/end due to leading/trailing |
-        parts = line.split('|')
+        # Separator lines start with +
+        if line.startswith('+'):
+            separator_count += 1
+            # After the second separator, we're in the data section
+            if separator_count >= 2:
+                in_header = False
+            continue
 
-        # Remove empty strings from leading/trailing pipes
+        # Parse data row
+        parts = line.split('|')
         cells = [cell.strip() for cell in parts[1:-1]]
 
+        # Store in appropriate structure
+        if in_header:
+            headers.append(cells)
+        else:
+            values.append(cells)
+
+        # Track max lengths across all cells (headers and values)
         for col_idx, cell in enumerate(cells):
             cell_len = len(cell)
             if col_idx not in max_lengths:
@@ -38,7 +57,61 @@ def parse_table(lines):
             else:
                 max_lengths[col_idx] = max(max_lengths[col_idx], cell_len)
 
-    return max_lengths
+    return headers, values, max_lengths
+
+
+def format_table(headers, values, max_lengths):
+    """
+    Format headers and values into a table with:
+    - One space between separator and content
+    - Headers centered in each column
+    - Values left-aligned in each column
+    """
+    num_cols = len(max_lengths)
+    output_lines = []
+
+    # Build separator line
+    sep_parts = ['+']
+    for col_idx in range(num_cols):
+        # Column width + 2 for the single space padding on each side
+        sep_parts.append('-' * (max_lengths[col_idx] + 2))
+        sep_parts.append('+')
+    separator = ''.join(sep_parts)
+
+    # Add top separator
+    output_lines.append(separator)
+
+    # Format header rows (centered)
+    for header_row in headers:
+        row_parts = ['|']
+        for col_idx in range(num_cols):
+            cell = header_row[col_idx] if col_idx < len(header_row) else ''
+            # Center the header with single space padding
+            centered = cell.center(max_lengths[col_idx])
+            row_parts.append(f' {centered} ')
+            row_parts.append('|')
+        output_lines.append(''.join(row_parts))
+
+    # Add separator after headers
+    if headers:
+        output_lines.append(separator)
+
+    # Format value rows (left-aligned)
+    for value_row in values:
+        row_parts = ['|']
+        for col_idx in range(num_cols):
+            cell = value_row[col_idx] if col_idx < len(value_row) else ''
+            # Left-align the value with single space padding
+            padded = cell.ljust(max_lengths[col_idx])
+            row_parts.append(f' {padded} ')
+            row_parts.append('|')
+        output_lines.append(''.join(row_parts))
+
+    # Add bottom separator
+    if values:
+        output_lines.append(separator)
+
+    return '\n'.join(output_lines)
 
 
 def main():
@@ -49,13 +122,16 @@ def main():
     else:
         lines = sys.stdin.readlines()
 
-    max_lengths = parse_table(lines)
+    headers, values, max_lengths = parse_table(lines)
 
-    print("Column max lengths:")
-    for col, length in sorted(max_lengths.items()):
-        print(f"  Column {col}: {length}")
+    print("=== Parsed Data ===")
+    print(f"Headers (2D list): {headers}")
+    print(f"Values (2D list): {values}")
+    print(f"Max lengths: {max_lengths}")
+    print()
+    print("=== Reformatted Table ===")
+    print(format_table(headers, values, max_lengths))
 
 
 if __name__ == '__main__':
     main()
-
