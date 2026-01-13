@@ -2,7 +2,20 @@
 """Parse a pipe-delimited table, store headers and values, and reformat output."""
 
 import sys
+import argparse
 
+args = argparse.ArgumentParser(description='Parse a pipe-delimited table, store headers and values, and reformat output.')
+# Debug arguments
+args.add_argument('-d', '--debug', action='store_true', help='Debug mode')
+args.add_argument('file', nargs='?', type=str, help='The file to process (reads from stdin if not provided)')
+args.add_argument('--columns', type=int, help='The number of columns to resize')
+args.add_argument('--width', type=int, help='The width of the columns')
+args.add_argument('--delimiter', type=str, help='The delimiter to use')
+args.add_argument('--row_delimiter', type=str, help='The row delimiter to use')
+args.add_argument('--column_delimiter', type=str, help='The column delimiter to use')
+args.add_argument('--column_spacing', type=str, help='The column spacing to use')
+
+args = args.parse_args()
 
 def parse_table(lines):
     """
@@ -115,21 +128,22 @@ def format_table(headers, values, max_lengths):
 
 
 def main():
-    # Read from stdin or a file
-    if len(sys.argv) > 1:
-        with open(sys.argv[1], 'r') as f:
+    # Read from file if provided, otherwise stdin
+    if args.file:
+        with open(args.file, 'r') as f:
             lines = f.readlines()
     else:
         lines = sys.stdin.readlines()
 
     headers, values, max_lengths = parse_table(lines)
 
-    print("=== Parsed Data ===")
-    print(f"Headers (2D list): {headers}")
-    print(f"Values (2D list): {values}")
-    print(f"Max lengths: {max_lengths}")
-    print()
-    print("=== Reformatted Table ===")
+    if args.debug:
+        print("=== Parsed Data ===")
+        print(f"Headers (2D list): {headers}")
+        print(f"Values (2D list): {values}")
+        print(f"Max lengths: {max_lengths}")
+        print()
+        print("=== Reformatted Table ===")
     print(format_table(headers, values, max_lengths))
 
 
