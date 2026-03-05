@@ -2,10 +2,9 @@
 """
 Parse Chrome DevTools Request Cookies paste into a site auth file.
 
-Reads <domain>.raw.txt (tab-separated paste from Network → Request Cookies).
-The paste typically has no header row (Chrome doesn't let you copy it); column
-order is defined by REQUEST_COOKIES_COLUMNS below. Edit that list if Chrome
-changes the table order or column names.
+Reads <domain>.raw.txt (paste from Network → Request Cookies). Columns may be
+tab-separated or space-separated (two or more spaces). No header row is
+expected; column order is defined by REQUEST_COOKIES_COLUMNS below.
 
 Usage:
   parse_cookies_to_auth.py <domain>.raw.txt [<domain2>.raw.txt ...]
@@ -16,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -44,17 +44,29 @@ NAME_COL = REQUEST_COOKIES_COLUMNS.index("Name") if "Name" in REQUEST_COOKIES_CO
 VALUE_COL = REQUEST_COOKIES_COLUMNS.index("Value") if "Value" in REQUEST_COOKIES_COLUMNS else 1
 
 
+def _split_columns(line: str, use_tabs: bool) -> list[str]:
+    """Split a line into columns by tab or by 2+ spaces."""
+    if use_tabs:
+        return line.split("\t")
+    return re.split(r"\s{2,}", line)
+
+
 def parse_tsv_cookies(text: str) -> list[tuple[str, str]]:
     """
-    Parse tab-separated cookie table. No header row is expected; column order
-    is given by REQUEST_COOKIES_COLUMNS (Name at NAME_COL, Value at VALUE_COL).
+    Parse cookie table (tab- or space-separated). No header row is expected;
+    column order is given by REQUEST_COOKIES_COLUMNS (Name at NAME_COL, Value at VALUE_COL).
     Returns list of (name, value) for cookie pairs.
     """
     lines = [ln.rstrip("\r") for ln in text.strip().splitlines() if ln.strip()]
-    pairs = []
+    if not lines:
+        return []
     need = max(NAME_COL, VALUE_COL) + 1
+    # Detect delimiter: if first line has 2+ columns when split by tab, use tab; else use 2+ spaces
+    first_tab_cols = lines[0].split("\t")
+    use_tabs = len(first_tab_cols) >= need
+    pairs = []
     for line in lines:
-        cols = line.split("\t")
+        cols = _split_columns(line, use_tabs)
         if len(cols) >= need:
             name = cols[NAME_COL].strip()
             value = cols[VALUE_COL].strip()
