@@ -19,6 +19,13 @@ import requests
 # Directory under home where token files are stored (filename = domain, with ":" → "_")
 BEARER_TOKENS_DIR = os.path.expanduser("~/.auth/bearer_tokens")
 
+# Default User-Agent; overridden by ~/.chrome_agent if that file exists
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+)
+CHROME_AGENT_FILE = os.path.expanduser("~/.chrome_agent")
+
 # Message when no token file exists for a domain
 NO_TOKEN_MESSAGE = """No bearer token found for domain {domain}.
 To add a token:
@@ -30,6 +37,14 @@ To add a token:
   5. Save the token in: {path}
      (one line, no "Bearer " prefix needed)
 """
+
+
+def get_user_agent() -> str:
+    """Return User-Agent string: from ~/.chrome_agent if file exists, else default."""
+    path = Path(CHROME_AGENT_FILE)
+    if path.is_file():
+        return path.read_text().strip() or DEFAULT_USER_AGENT
+    return DEFAULT_USER_AGENT
 
 
 def domain_from_url(url: str) -> str:
@@ -114,9 +129,13 @@ def download_url(
     token: str,
     output_dir: Path,
     date_suffix: str | None,
+    user_agent: str,
 ) -> bool:
     """Download URL with Bearer token and save to output_dir. Returns True on success."""
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": user_agent,
+    }
     try:
         resp = requests.get(url, headers=headers, timeout=60)
         resp.raise_for_status()
@@ -174,6 +193,7 @@ def main() -> None:
         from datetime import datetime
         date_suffix = datetime.now().strftime("%Y-%m-%d_%H%M")
 
+    user_agent = get_user_agent()
     token_cache: dict[str, str] = {}
     failed_domains: set[str] = set()
     ok = 0
@@ -193,7 +213,7 @@ def main() -> None:
                 token_path = Path(BEARER_TOKENS_DIR) / domain
                 print(NO_TOKEN_MESSAGE.format(domain=domain, path=token_path), file=sys.stderr)
             continue
-        if download_url(url, token, output_dir, date_suffix):
+        if download_url(url, token, output_dir, date_suffix, user_agent):
             ok += 1
 
     if failed_domains:
