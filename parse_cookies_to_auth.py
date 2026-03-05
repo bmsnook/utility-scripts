@@ -2,16 +2,14 @@
 """
 Parse Chrome DevTools Request Cookies paste into a site auth file.
 
-Reads <domain>.raw.txt (tab-separated paste from Network → Request Cookies),
-extracts Name and Value columns, and writes ~/.auth/site_auth/<domain> with
-a single "Cookie: name1=value1; name2=value2; ..." line.
+Reads <domain>.raw.txt (tab-separated paste from Network → Request Cookies).
+The paste typically has no header row (Chrome doesn't let you copy it); column
+order is defined by REQUEST_COOKIES_COLUMNS below. Edit that list if Chrome
+changes the table order or column names.
 
 Usage:
   parse_cookies_to_auth.py <domain>.raw.txt [<domain2>.raw.txt ...]
   parse_cookies_to_auth.py --all   # process all *.raw.txt in site_auth dir
-
-Expected paste format (Chrome Request Cookies table):
-  Name, Value, Domain, Path, Expires / Max-Age, Size, HttpOnly, Secure, SameSite, ...
 """
 
 from __future__ import annotations
@@ -24,32 +22,42 @@ from pathlib import Path
 # Same directory as download_with_bearer.py uses
 SITE_AUTH_DIR = os.path.expanduser("~/.auth/site_auth")
 
-# Chrome Request Cookies column headers (order may vary; we look up by name)
-COOKIE_HEADERS = ("Name", "Value")
+# Chrome Request Cookies table column order (left to right). Edit if Chrome changes.
+# Only "Name" and "Value" are used; others are for correct column indexing.
+REQUEST_COOKIES_COLUMNS = [
+    "Name",
+    "Value",
+    "Domain",
+    "Path",
+    "Expires / Max-Age",
+    "Size",
+    "HttpOnly",
+    "Secure",
+    "SameSite",
+    "Partition Key Site",
+    "Cross Site",
+    "Priority",
+]
+
+# Indices for cookie name/value (derived from REQUEST_COOKIES_COLUMNS)
+NAME_COL = REQUEST_COOKIES_COLUMNS.index("Name") if "Name" in REQUEST_COOKIES_COLUMNS else 0
+VALUE_COL = REQUEST_COOKIES_COLUMNS.index("Value") if "Value" in REQUEST_COOKIES_COLUMNS else 1
 
 
 def parse_tsv_cookies(text: str) -> list[tuple[str, str]]:
     """
-    Parse tab-separated cookie table; first line = headers.
+    Parse tab-separated cookie table. No header row is expected; column order
+    is given by REQUEST_COOKIES_COLUMNS (Name at NAME_COL, Value at VALUE_COL).
     Returns list of (name, value) for cookie pairs.
     """
     lines = [ln.rstrip("\r") for ln in text.strip().splitlines() if ln.strip()]
-    if not lines:
-        return []
-    header_line = lines[0]
-    parts = header_line.split("\t")
-    try:
-        name_idx = parts.index("Name")
-        value_idx = parts.index("Value")
-    except ValueError:
-        # Fallback: first two columns
-        name_idx, value_idx = 0, 1
     pairs = []
-    for line in lines[1:]:
+    need = max(NAME_COL, VALUE_COL) + 1
+    for line in lines:
         cols = line.split("\t")
-        if len(cols) > max(name_idx, value_idx):
-            name = cols[name_idx].strip()
-            value = cols[value_idx].strip()
+        if len(cols) >= need:
+            name = cols[NAME_COL].strip()
+            value = cols[VALUE_COL].strip()
             if name:
                 pairs.append((name, value))
     return pairs
