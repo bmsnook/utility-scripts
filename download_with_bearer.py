@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import urlparse, unquote
@@ -212,6 +213,11 @@ def main() -> None:
         action="store_true",
         help='Add a date suffix __YYYY-MM-DD_HHMM before the file extension',
     )
+    parser.add_argument(
+        "--js",
+        action="store_true",
+        help="Use a headless browser (Playwright) so JavaScript runs; captures the real file if the server returns HTML without JS",
+    )
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir).resolve()
@@ -250,7 +256,19 @@ def main() -> None:
                     file=sys.stderr,
                 )
             continue
-        if download_url(url, domain_headers, output_dir, date_suffix, user_agent):
+        if args.js:
+            script_dir = Path(__file__).resolve().parent
+            helper = script_dir / "download_with_js.py"
+            cmd = [sys.executable, str(helper), "-o", str(output_dir)]
+            if date_suffix:
+                cmd.append("-d")
+            cmd.append(url)
+            try:
+                if subprocess.run(cmd, check=False).returncode == 0:
+                    ok += 1
+            except Exception as e:
+                print(f"JS download failed for {url}: {e}", file=sys.stderr)
+        elif download_url(url, domain_headers, output_dir, date_suffix, user_agent):
             ok += 1
 
     if failed_domains:
