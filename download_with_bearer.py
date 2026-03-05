@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Download one or more URLs using Bearer token auth.
-Tokens are read from ~/.auth/bearer_tokens/<domain> per URL domain.
+Download one or more URLs using Bearer token or cookie-based auth.
+Per-domain credentials are read from ~/.auth/bearer_tokens/<domain>.
 """
 
 from __future__ import annotations
@@ -27,15 +27,18 @@ DEFAULT_USER_AGENT = (
 CHROME_AGENT_FILE = os.path.expanduser("~/.chrome_agent")
 
 # Message when no token file exists for a domain
-NO_TOKEN_MESSAGE = """No bearer token found for domain {domain}.
-To add a token:
-  1. In Google Chrome, open DevTools (F12 or Cmd+Option+I).
-  2. Go to the Network tab and enable "Preserve log".
-  3. Log in to the site so the session cookie is set.
-  4. Find the request that uses the token and look for "ACCESSTOKEN" in the Cookie
-     for the current session, or copy the Bearer token from the request Authorization header.
-  5. Save the token in: {path}
-     (one line, no "Bearer " prefix needed)
+NO_TOKEN_MESSAGE = """No auth file found for domain {domain}.
+To add credentials, create: {path}
+
+  Option A — Bearer token (single line, no "Bearer " prefix):
+    <paste your token>
+
+  Option B — Custom headers (one "Header-Name: value" per line, e.g. for Artifactory):
+    Cookie: ACCESSTOKEN=<paste ACCESSTOKEN value from Chrome Application → Cookies>
+    (Add REFRESHTOKEN=... on the same Cookie line if the server requires it.)
+
+To get the ACCESSTOKEN in Chrome: DevTools (F12) → Application → Cookies → select the domain,
+or enable "Preserve log" in Network, log in, and inspect the Cookie header of a request.
 """
 
 
@@ -53,20 +56,39 @@ def domain_from_url(url: str) -> str:
     return netloc.replace(":", "_") if netloc else ""
 
 
-def get_bearer_token(domain: str, token_cache: dict) -> str | None:
+def get_domain_headers(domain: str, headers_cache: dict[str, dict[str, str]]) -> dict[str, str] | None:
     """
-    Get bearer token for domain from token_cache or from ~/.auth/bearer_tokens/<domain>.
-    Updates token_cache. Returns None if no token file exists.
+    Get request headers for domain from cache or from ~/.auth/bearer_tokens/<domain>.
+    File format: either a single line (legacy Bearer token) or key/value lines
+    "Header-Name: value" (e.g. "Cookie: ACCESSTOKEN=..."). Updates headers_cache.
+    Returns None if no file exists.
     """
-    if domain in token_cache:
-        return token_cache[domain]
+    if domain in headers_cache:
+        return headers_cache[domain]
     tokens_dir = Path(BEARER_TOKENS_DIR)
-    token_file = tokens_dir / domain
-    if not token_file.is_file():
+    auth_file = tokens_dir / domain
+    if not auth_file.is_file():
         return None
-    token = token_file.read_text().strip()
-    token_cache[domain] = token
-    return token
+    lines = [
+        line.strip()
+        for line in auth_file.read_text().splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    if not lines:
+        return None
+    # Legacy: single line without "Header-Name: value" → treat as Bearer token
+    if len(lines) == 1 and ": " not in lines[0]:
+        headers = {"Authorization": f"Bearer {lines[0]}"}
+    else:
+        headers = {}
+        for line in lines:
+            if ": " in line:
+                key, _, value = line.partition(": ")
+                key = key.strip()
+                if key:
+                    headers[key] = value.strip()
+    headers_cache[domain] = headers
+    return headers
 
 
 def deduce_filename(url: str) -> str:
@@ -126,16 +148,13 @@ def add_date_suffix(filename: str, date_str: str) -> str:
 
 def download_url(
     url: str,
-    token: str,
+    domain_headers: dict[str, str],
     output_dir: Path,
     date_suffix: str | None,
     user_agent: str,
 ) -> bool:
-    """Download URL with Bearer token and save to output_dir. Returns True on success."""
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "User-Agent": user_agent,
-    }
+    """Download URL using per-domain headers and save to output_dir. Returns True on success."""
+    headers = {**domain_headers, "User-Agent": user_agent}
     try:
         resp = requests.get(url, headers=headers, timeout=60)
         resp.raise_for_status()
@@ -163,7 +182,7 @@ def download_url(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Download URL(s) using Bearer token auth (tokens from ~/.auth/bearer_tokens/<domain>)."
+        description="Download URL(s) using Bearer or cookie auth (see ~/.auth/bearer_tokens/<domain>)."
     )
     parser.add_argument(
         "urls",
@@ -194,7 +213,7 @@ def main() -> None:
         date_suffix = datetime.now().strftime("%Y-%m-%d_%H%M")
 
     user_agent = get_user_agent()
-    token_cache: dict[str, str] = {}
+    headers_cache: dict[str, dict[str, str]] = {}
     failed_domains: set[str] = set()
     ok = 0
 
@@ -206,14 +225,14 @@ def main() -> None:
         if not domain:
             print(f"Invalid URL (no host): {url}", file=sys.stderr)
             continue
-        token = get_bearer_token(domain, token_cache)
-        if not token:
+        domain_headers = get_domain_headers(domain, headers_cache)
+        if not domain_headers:
             if domain not in failed_domains:
                 failed_domains.add(domain)
                 token_path = Path(BEARER_TOKENS_DIR) / domain
                 print(NO_TOKEN_MESSAGE.format(domain=domain, path=token_path), file=sys.stderr)
             continue
-        if download_url(url, token, output_dir, date_suffix, user_agent):
+        if download_url(url, domain_headers, output_dir, date_suffix, user_agent):
             ok += 1
 
     if failed_domains:
