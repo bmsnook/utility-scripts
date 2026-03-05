@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Download one or more URLs using Bearer token or cookie-based auth.
-Per-domain credentials are read from ~/.auth/bearer_tokens/<domain>.
+Download one or more URLs using Bearer token and/or cookie-based auth.
+Per-domain credentials are read from ~/.auth/site_auth/<domain>.
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ from urllib.parse import urlparse, unquote
 
 import requests
 
-# Directory under home where token files are stored (filename = domain, with ":" → "_")
-BEARER_TOKENS_DIR = os.path.expanduser("~/.auth/bearer_tokens")
+# Directory under home where per-domain auth files live (filename = domain, ":" → "_")
+SITE_AUTH_DIR = os.path.expanduser("~/.auth/site_auth")
 
 # Default User-Agent; overridden by ~/.chrome_agent if that file exists
 DEFAULT_USER_AGENT = (
@@ -26,19 +26,21 @@ DEFAULT_USER_AGENT = (
 )
 CHROME_AGENT_FILE = os.path.expanduser("~/.chrome_agent")
 
-# Message when no token file exists for a domain
+# Message when no auth file exists for a domain
 NO_TOKEN_MESSAGE = """No auth file found for domain {domain}.
-To add credentials, create: {path}
+Create: {path}
 
-  Option A — Bearer token (single line, no "Bearer " prefix):
-    <paste your token>
+  Option A — Bearer only:
+    bearer_token=<your-token>
 
-  Option B — Custom headers (one "Header-Name: value" per line, e.g. for Artifactory):
-    Cookie: ACCESSTOKEN=<paste ACCESSTOKEN value from Chrome Application → Cookies>
-    (Add REFRESHTOKEN=... on the same Cookie line if the server requires it.)
+  Option B — Cookie (e.g. Artifactory): paste Request Cookies from Chrome into
+    {path_raw}
+  then run: parse_cookies_to_auth.py {path_raw}
 
-To get the ACCESSTOKEN in Chrome: DevTools (F12) → Application → Cookies → select the domain,
-or enable "Preserve log" in Network, log in, and inspect the Cookie header of a request.
+  Option C — Both (Bearer + Cookie) or custom headers (one per line):
+    bearer_token=<token>
+    Cookie: name1=val1; name2=val2
+    X-Custom-Header: value
 """
 
 
@@ -58,15 +60,18 @@ def domain_from_url(url: str) -> str:
 
 def get_domain_headers(domain: str, headers_cache: dict[str, dict[str, str]]) -> dict[str, str] | None:
     """
-    Get request headers for domain from cache or from ~/.auth/bearer_tokens/<domain>.
-    File format: either a single line (legacy Bearer token) or key/value lines
-    "Header-Name: value" (e.g. "Cookie: ACCESSTOKEN=..."). Updates headers_cache.
+    Get request headers for domain from cache or from ~/.auth/site_auth/<domain>.
+    File format:
+      - bearer_token=<value>  → sets Authorization: Bearer <value>
+      - Header-Name: value   → sets that header (e.g. Cookie: ...)
+      - Legacy: single line without ":" or "bearer_token=" → Bearer token
+    Multiple lines and both bearer_token and Cookie (or other headers) are supported.
     Returns None if no file exists.
     """
     if domain in headers_cache:
         return headers_cache[domain]
-    tokens_dir = Path(BEARER_TOKENS_DIR)
-    auth_file = tokens_dir / domain
+    auth_dir = Path(SITE_AUTH_DIR)
+    auth_file = auth_dir / domain
     if not auth_file.is_file():
         return None
     lines = [
@@ -76,17 +81,22 @@ def get_domain_headers(domain: str, headers_cache: dict[str, dict[str, str]]) ->
     ]
     if not lines:
         return None
-    # Legacy: single line without "Header-Name: value" → treat as Bearer token
-    if len(lines) == 1 and ": " not in lines[0]:
-        headers = {"Authorization": f"Bearer {lines[0]}"}
-    else:
-        headers = {}
-        for line in lines:
-            if ": " in line:
-                key, _, value = line.partition(": ")
-                key = key.strip()
-                if key:
-                    headers[key] = value.strip()
+    headers = {}
+    for line in lines:
+        if line.startswith("bearer_token="):
+            value = line[len("bearer_token=") :].strip()
+            if value:
+                headers["Authorization"] = f"Bearer {value}"
+        elif ": " in line:
+            key, _, value = line.partition(": ")
+            key = key.strip()
+            if key:
+                headers[key] = value.strip()
+        else:
+            # Legacy: single line without ":" or "bearer_token=" → Bearer
+            if len(lines) == 1:
+                headers["Authorization"] = f"Bearer {line}"
+            break
     headers_cache[domain] = headers
     return headers
 
@@ -182,7 +192,7 @@ def download_url(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Download URL(s) using Bearer or cookie auth (see ~/.auth/bearer_tokens/<domain>)."
+        description="Download URL(s) using Bearer and/or cookie auth (see ~/.auth/site_auth/<domain>)."
     )
     parser.add_argument(
         "urls",
@@ -229,8 +239,16 @@ def main() -> None:
         if not domain_headers:
             if domain not in failed_domains:
                 failed_domains.add(domain)
-                token_path = Path(BEARER_TOKENS_DIR) / domain
-                print(NO_TOKEN_MESSAGE.format(domain=domain, path=token_path), file=sys.stderr)
+                auth_path = Path(SITE_AUTH_DIR) / domain
+                raw_path = auth_path.parent / f"{domain}.raw.txt"
+                print(
+                    NO_TOKEN_MESSAGE.format(
+                        domain=domain,
+                        path=auth_path,
+                        path_raw=raw_path,
+                    ),
+                    file=sys.stderr,
+                )
             continue
         if download_url(url, domain_headers, output_dir, date_suffix, user_agent):
             ok += 1
