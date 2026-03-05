@@ -1,0 +1,32 @@
+I would like to create a Python script to download pages using the authentication token from a session I have logged into with Google Chrome. I would like to adapt the following example from Google: 
+```
+import requests
+
+# Use the token you manually extracted from DevTools
+bearer_token = "YOUR_EXTRACTED_BEARER_TOKEN"
+
+# Set the URL of the protected resource
+url = "https://api.example.com"
+
+# Set the Authorization header
+headers = {
+    "Authorization": f"Bearer {bearer_token}"
+}
+
+# Send the request with the token
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    print("Access granted! Data:")
+    print(response.json())
+else:
+    print(f"Failed to access resource. Status code: {response.status_code}")
+```
+with these changes: 
+- make the file executable
+- add the necessary header so the script can be called directly instead of having to be called as an argument to python (python3) 
+- accept one or more arguments (without a flag) of the page(s) I want to download (i.e., to set the `url` value(s))
+- search the directory `~/.auth/bearer_tokens` for a file named for the domain portion of the url(s); use the contents of that file for the value of the `bearer_token` variable instead of manually setting it in the script (build a temporary dictionary of domain=>bearer_token for the duration of script run so that if multiple arguments have the same domain, the dictionary is consulted instead of repeatedly reading the same domain file)
+- if a file for the domain does not exist, prompt the user to enable "Preserve log" in the Network portion of Google Chrome Developer Tools and log in, then look for an "ACCESSTOKEN" value in the Cookie for the "current" seession
+- default to saving the downloading file(s) to the same file name(s) as specified in the URL, if it can be accurately deduced, in the current directory, but accept a script argument to add a date-based suffix equivalent to the output of the bash output of "__$(date "+%Y-%m-%d_%H%M")" that appears before the file extension (if applicable); if the path does not provide a clear filename (i.e., calls a CGI, an API endpoint, etc.), deduce a reasonable filename from url context, including any CGI/API references
+- also accept an optional argument specifying a different directory to save file(s) on the command line
