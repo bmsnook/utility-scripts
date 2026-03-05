@@ -1,0 +1,361 @@
+## Usage Guides
+##   https://git-scm.com/docs/gitignore
+##   https://www.w3schools.com/git/git_ignore.asp?remote=github
+##   https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+##   https://www.pluralsight.com/guides/how-to-use-gitignore-file
+##     Debugging
+##     If you’re having trouble, you can find out why certain files are being ignored 
+##     by using the git check-ignore command with the verbose option.
+##       git check-ignore -v example.log
+##     The output will look something like this:
+##       .gitignore:1:*.log       example.log
+##     In this example, the .gitignore file at the root of the project is causing example.log 
+##     to be ignored, and the pattern that's causing it to be ignored is *.log on the first line.
+## 
+## Useful example .gitignore files:
+##   https://github.com/github/gitignore
+##   https://github.com/box/samples/blob/master/.gitignore
+## # Redirect from https://www.gitignore.io/ 
+##   https://www.toptal.com/developers/gitignore
+## 
+
+# Folder view configuration files (MacOS / Windows)
+.DS_Store
+Desktop.ini
+
+# Thumbnail cache files (MacOS / Windows)
+._*
+Thumbs.db
+
+## MacOS
+##   https://www.toptal.com/developers/gitignore/api/macos
+## 
+# Created by https://www.toptal.com/developers/gitignore/api/macos
+# Edit at https://www.toptal.com/developers/gitignore?templates=macos
+
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### macOS Patch ###
+# iCloud generated files
+*.icloud
+
+# End of https://www.toptal.com/developers/gitignore/api/macos
+
+
+## Windows
+##   https://github.com/github/gitignore/blob/main/Global/Windows.gitignore
+## 
+# Created by https://www.toptal.com/developers/gitignore/api/windows
+# Edit at https://www.toptal.com/developers/gitignore?templates=windows
+
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+
+# Dump file
+*.stackdump
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# End of https://www.toptal.com/developers/gitignore/api/windows
+
+
+# Temporary, Backup, etc.
+*~
+*.swp
+*.backup
+*.tmp
+*.bak
+*.old
+bin/**
+lib/**
+tmp/**
+tmp/**/*
+output
+log/
+app/
+
+## Python
+##   https://github.com/github/gitignore/blob/main/Python.gitignore
+## 
+#    Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+#    C extensions
+*.so
+## Distribution / packaging
+.Python
+## 
+
+## Playwright
+**/playwright/.auth/
+
+## VirtualEnv
+##   https://github.com/github/gitignore/blob/main/Global/VirtualEnv.gitignore
+## 
+# https://realpython.com/python-virtual-environments-a-primer/#the-virtualenv-project
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ib64
+[Ll]ocal
+[Ss]cripts
+pyvenv.cfg
+.venv
+pip-selfcheck.json
+
+## Environments
+##   NOTE: .env is also used by Docker to pass environment variables to containers
+##     Especially when passing sensitive values (i.e., MYSQL_PASSWORD):
+##     - add .env to .gitignore (avoid posting to Git version control),
+##     - add .env to .dockerignore (avoid sharing to public images on Docker Hub)
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Compiled C++ files
+*.out
+
+## Git
+##   https://travisjeffery.com/b/2011/12/keeping-your-git-repo-clean-of-orig-files/
+## 
+*.orig
+
+## HTML / html-css
+##   https://github.com/GoesToEleven/html-css/blob/master/.gitignore
+## 
+.sass-cache
+
+## Terraform
+##   https://github.com/github/gitignore/blob/main/Terraform.gitignore
+## 
+.terraform.lock.hcl
+.terraform/
+# .tfstate files
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+## VS Code
+##   https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+## 
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+# Local History for Visual Studio Code
+.history/
+# Built Visual Studio Code Extensions
+*.vsix
+
+## IntelliJ IDEA
+##   https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+## 
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+## Maven
+##   https://github.com/github/gitignore/blob/main/Maven.gitignore
+## 
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/
+# Files like MANIFEST.MF
+**/*.MF
+
+### STS - SpringSource Tool Suite ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+## NetBeans
+##   https://github.com/github/gitignore/blob/main/Global/NetBeans.gitignore
+## 
+**/nbproject/private/
+**/nbproject/Makefile-*.mk
+**/nbproject/Package-*.bash
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+## 
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+## Java
+##   https://github.com/github/gitignore/blob/main/Java.gitignore
+## 
+# Compiled class file
+*.class
+# Log file
+*.log
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+## Eclipse
+##   https://github.com/github/gitignore/blob/main/Global/Eclipse.gitignore
+## 
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+# External tool builders
+.externalToolBuilders/
+# Locally stored "Eclipse launch configurations"
+*.launch
+# PyDev specific (Python IDE for Eclipse)
+*.pydevproject
+# CDT-specific (C/C++ Development Tooling)
+.cproject
+# CDT- autotools
+.autotools
+# Java annotation processor (APT)
+.factorypath
+# PDT-specific (PHP Development Tools)
+.buildpath
+# sbteclipse plugin
+.target
+# Uncomment this line if you wish to ignore the project description file.
+# Typically, this file would be tracked if it contains build/dependency configurations:
+#.project
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+## Node
+##   https://github.com/github/gitignore/blob/main/Node.gitignore
+## 
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+# Dependency directories
+node_modules/
+jspm_packages/
+# Optional npm cache directory
+.npm
+
+# target folders
+target
+*target*
+
+## jRebel files
+##   https://github.com/GravityLabs/HPaste/blob/master/.gitignore
+##   https://git.magnolia-cms.com/projects/MODULES/repos/pages/commits/d4ff217c52b5f4d5f37da2967530d70fd89918a7#.gitignore
+## 
+rebel.xml
+## Other SCM
+## 
+## Subversion
+##   https://github.com/github/gitignore/blob/main/Global/SVN.gitignore
+.svn
+## CVS
+##   https://github.com/github/gitignore/blob/main/Global/CVS.gitignore
+/CVS/*
+**/CVS/*
+.cvsignore
+*/.cvsignore
+.CVS
+## Mercurial
+##   https://www.mercurial-scm.org/doc/hg.1.html
+##   https://github.com/github/gitignore/blob/main/Global/Mercurial.gitignore
+.hg*
+## NOTE: "syntax" statements are used in Mercurial .hgignore, not Git .gitignore
+##     syntax: glob
+##     syntax: regexp
+##   https://stackoverflow.com/questions/56010229/what-does-syntax-glob-regexp-mean-in-a-gitignore-file
+
+## Protractor
+##   https://github.com/angular/protractor/blob/master/.gitignore
+integration-test/protractor-test-whitelabel/npm
+npm-debug.log
+xmloutput*
+
+## Jupyter Notebooks
+##   https://github.com/jupyter/notebook/blob/main/.gitignore
+## 
+*.bundle.*
+*.egg-info/
+.ipynb_checkpoints
+*.tsbuildinfo
+
