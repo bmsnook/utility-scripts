@@ -34,7 +34,7 @@ Create: {path}
   Option A — Bearer only:
     bearer_token=<your-token>
 
-  Option B — Cookie (e.g. Artifactory): paste Request Cookies from Chrome into
+  Option B — Cookie: paste Request Cookies from Chrome into
     {path_raw}
   then run: parse_cookies_to_auth.py {path_raw}
 
